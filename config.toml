@@ -1,0 +1,28 @@
+[processing]
+max_dimension = 2400
+auto_crop = true
+denoise = true
+enhance_contrast = true
+threshold = true
+upscale = 1.5
+max_attempts = 20
+recovery = true
+recovery_attempts = 160
+max_seconds = 20.0
+# PDF417 first; broaden to QRCode, DataMatrix, or Code128 as needed.
+formats = ["PDF417", "QRCode", "DataMatrix", "Code128"]
+
+[camera]
+index = 0
+width = 1280
+height = 720
+scan_interval_seconds = 1.0
+max_scan_seconds = 2.0
+
+[output]
+directory = "exports"
+formats = ["csv", "json"]
+auto_save = true
+# Suppress repeat frames of the same payload during the current app session.
+deduplicate = true
+csv_excel_safe = true

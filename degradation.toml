@@ -1,0 +1,52 @@
+# Independent from config.toml and the NID reader.
+[batch]
+input_directory = "native_raw_img"
+output_directory = "low_img"
+recursive = true
+profiles = ["mild", "medium", "hard"]
+variants_per_profile = 1
+seed = 42
+output_format = "jpg" # jpg or png; PNG still includes simulated JPEG artifacts
+max_input_pixels = 40000000
+max_processing_dimension = 3000
+
+# scale reduces detail, then restores the working image dimensions.
+# Noise is measured in 0..255 pixel units. All effects apply to the whole image.
+[profiles.mild]
+scale = 0.75
+blur_sigma = 0.55
+motion_pixels = 3
+noise_sigma = 3.0
+contrast = 0.9
+brightness = 0.98
+shadow = 0.12
+glare = 0.04
+rotation_degrees = 2.0
+perspective = 0.01
+jpeg_quality = 75
+
+[profiles.medium]
+scale = 0.45
+blur_sigma = 1.1
+motion_pixels = 5
+noise_sigma = 8.0
+contrast = 0.72
+brightness = 0.90
+shadow = 0.28
+glare = 0.12
+rotation_degrees = 6.0
+perspective = 0.035
+jpeg_quality = 42
+
+[profiles.hard]
+scale = 0.25
+blur_sigma = 1.8
+motion_pixels = 9
+noise_sigma = 15.0
+contrast = 0.5
+brightness = 0.82
+shadow = 0.45
+glare = 0.25
+rotation_degrees = 12.0
+perspective = 0.07
+jpeg_quality = 20
