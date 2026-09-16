@@ -96,3 +96,7 @@ dist/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Public README screenshots, generated exclusively from fictional barcode data.
+!/docs/images/ui-overview.png
+!/docs/images/ui-raw-payload.png

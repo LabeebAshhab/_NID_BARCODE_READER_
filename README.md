@@ -13,6 +13,24 @@ A local Python desktop application for scanning barcodes from photographs of the
 
 This is a barcode reader, not an NID authenticity or identity verification service. PDF417 is the primary intended format; QR Code, Data Matrix and Code 128 are enabled too. No authoritative NID payload schema is implemented. A limited private sample was used for local recovery testing, but it does not establish support for every card generation or payload layout. Unknown, encrypted or binary contents are retained without inventing identity fields.
 
+## UI preview
+
+The desktop workspace uses a soft sage palette, high-DPI text, resizable image previews and clearly separated results. These screenshots show the actual app with a generated barcode containing **fictional test data only**.
+
+### Image preview and decoded details
+
+![NID Card Reader showing a synthetic input barcode, detection boundaries, scan summary and structured decoded fields](docs/images/ui-overview.png)
+
+Use **Import image** or **Start camera** to begin. The two panels show the source and current processing result; the lower panel presents parsed fields, the source, barcode format and timing. Double-click either image for its full-resolution view.
+
+### Raw payload inspection
+
+![Raw payload tab showing fictional decoded text and its lossless Base64 representation](docs/images/ui-raw-payload.png)
+
+The **Raw payload** tab exposes decoded text and exact bytes encoded as Base64. **Activity log** records processing stages, while **Export result** saves the selected result using the configured formats.
+
+To refresh these public screenshots on Windows, run `python tools/capture_readme_ui.py`. It generates its own fictional input in memory and disables automatic exports; it does not open private images.
+
 ## Windows quick start
 
 Use Python 3.11 or newer with Tcl/Tk installed (included with the standard python.org Windows installation).
