@@ -9,10 +9,13 @@ def load_config(path=None):
     with path.open("rb") as stream:
         config = tomllib.load(stream)
     p, c, o = (config[key] for key in ("processing", "camera", "output"))
+    p.setdefault('detect', True)
     p.setdefault('recovery', True)
     p.setdefault('recovery_attempts', 160)
     p.setdefault('max_seconds', 20.0)
     c.setdefault('max_scan_seconds', 2.0)
+    if not isinstance(p['detect'], bool):
+        raise ValueError('processing.detect must be boolean')
     if not isinstance(p['recovery'], bool):
         raise ValueError('processing.recovery must be boolean')
     if type(p['recovery_attempts']) is not int or not 1 <= p['recovery_attempts'] <= 600:

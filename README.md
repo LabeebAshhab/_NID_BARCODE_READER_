@@ -62,13 +62,14 @@ The example contains fictional labels and zeroes; it is not an official NID enco
 ## Main pipeline: capture to export
 
 1. **Acquire:** load an imported image with EXIF orientation correction, or capture camera frames in a background thread.
-2. **Prepare:** apply the fast preprocessing candidates below and display the current candidate in the UI.
-3. **Recover:** if the fast path fails, try measured deskew, lighting normalization and additional recovery candidates within the configured limits.
-4. **Decode:** accept valid ZXing results, preserve their exact bytes, and associate metadata with the current source image.
-5. **Parse and display:** show explicit JSON properties, XML-like leaf tags or labeled text fields. Unrecognized content remains available as raw text and Base64 bytes.
-6. **Save:** write per-record CSV/JSON exports, with session-level deduplication and atomic writes for each file.
+2. **Detect:** locate barcode-like regions first and rank them by focus, so when several cards are visible the sharpest, in-focus card is tried before a blurred one (for example a card held out of focus in hand over clear cards on a desk). Each located region is also sharpened and brightened for blurry or noisy captures. Detection is heuristic; when nothing is located the full preprocessing pipeline still runs, so a missed detection never costs a read. Both back layouts are handled the same way — the barcode is the densest bar region whether it sits at the top (laminated PDF417 card) or along the bottom (older paper / chip card), and ZXing decodes both.
+3. **Prepare:** apply the fast preprocessing candidates below and display the current candidate in the UI.
+4. **Recover:** if the fast path fails, try measured deskew, lighting normalization and additional recovery candidates within the configured limits.
+5. **Decode:** accept valid ZXing results, preserve their exact bytes, and associate metadata with the current source image.
+6. **Parse and display:** show explicit JSON properties, XML-like leaf tags or labeled text fields. Unrecognized content remains available as raw text and Base64 bytes.
+7. **Save:** write per-record CSV/JSON exports, with session-level deduplication and atomic writes for each file.
 
-EXIF orientation correction -> bounded image size -> grayscale decode -> optional card quadrilateral detection and perspective correction -> barcode-region proposals with margins -> nonlocal-means denoising -> CLAHE contrast -> Otsu/adaptive thresholds -> enlargement -> small-angle rotation candidates. ZXing also tries right-angle rotations and inverted symbols. Processing stops at the first successful candidate and returns all symbols found in that candidate; it is not an exhaustive search of every barcode on a page.
+EXIF orientation correction -> bounded image size -> grayscale decode -> focus-ranked barcode detection with sharpen/brightness enhancement -> optional card quadrilateral detection and perspective correction -> barcode-region proposals with margins -> nonlocal-means denoising -> CLAHE contrast -> Otsu/adaptive thresholds -> enlargement -> small-angle rotation candidates. ZXing also tries right-angle rotations and inverted symbols. Processing stops at the first successful candidate and returns all symbols found in that candidate; it is not an exhaustive search of every barcode on a page.
 
 If the initial candidates fail, a second recovery stage measures tilt from image edges, corrects that angle, normalizes uneven lighting, retries aligned crops and scales, and tests unsharp masking, Sauvola/adaptive thresholds and multiple ZXing binarizers. These operations use only the supplied image. Originals, previous exports and degradation manifests are never consulted by the reader.
 
@@ -82,7 +83,7 @@ Edit `config.toml` and restart, or pass `--config path/to/config.toml` to either
 
 | Section | Settings |
 |---|---|
-| processing | Maximum image dimension, cropping, denoising, contrast, thresholding, enlargement factor, attempt limit, enabled barcode formats |
+| processing | Maximum image dimension, focus-ranked barcode detection (`detect`), cropping, denoising, contrast, thresholding, enlargement factor, attempt limit, enabled barcode formats |
 | camera | Device index, requested width/height, pause between decoding passes |
 | output | Directory, `formats = ["csv", "json"]`, auto-save, session deduplication, spreadsheet-safe CSV text |
 

@@ -6,6 +6,9 @@ enhance_contrast = true
 threshold = true
 upscale = 1.5
 max_attempts = 20
+# Locate the barcode first, focus-ranked so the clearest card is read before a
+# blurry one; blurry/noisy crops are sharpened and brightened before decoding.
+detect = true
 recovery = true
 recovery_attempts = 160
 max_seconds = 20.0

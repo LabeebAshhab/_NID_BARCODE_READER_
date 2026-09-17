@@ -60,6 +60,21 @@ def test_payload_parser_is_conservative():
     assert parse_payload('{"name":"পরীক্ষা"}')['fields']['name'] == 'পরীক্ষা'
 
 
+def test_smart_nid_delimited_payload_is_parsed():
+    """Newer Smart/chip NID cards use GS/RS-delimited fields, not XML tags."""
+    raw = b"<]?\x1eNMMd. Ruhul Amin\x1dNW3268483744\x1dBR19850121\x1dDT20151130\x1dPK13\x04"
+    parsed = parse_payload(raw.decode("latin-1"), raw)
+    assert parsed['status'] == "Smart NID fields (unverified)"
+    fields = parsed['fields']
+    assert fields['Name'] == "Md. Ruhul Amin"
+    assert fields['Date of birth'] == "19850121"
+    assert fields['Issue date'] == "20151130"
+    assert fields['PK'] == "13"          # unknown codes surface under their own code
+    # Old XML-tag cards must still parse when raw bytes carry no separators.
+    old = "<pin>123</pin><name>X Y</name>"
+    assert parse_payload(old, old.encode())['fields']['name'] == "X Y"
+
+
 def test_csv_json_lossless_and_dedup(tmp_path):
     config = load_config()["output"]
     config["directory"] = str(tmp_path)

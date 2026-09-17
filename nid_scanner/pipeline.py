@@ -50,7 +50,13 @@ def card_crop(image):
 
 
 def barcode_regions(gray):
-    """Gradient-based candidates with margins; full frame remains a fallback."""
+    """Gradient-based candidates with margins; full frame remains a fallback.
+
+    Candidates are ranked so barcode-like bands come before text (address block,
+    machine-readable zone); clearly text-like regions are skipped, but the most
+    barcode-like region is always kept so a hard image never loses coverage.
+    """
+    from .detect import barcode_score
     gradient = np.absolute(cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=3))
     gradient = cv2.normalize(gradient, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
     blurred = cv2.GaussianBlur(gradient, (9, 9), 0)
@@ -58,12 +64,20 @@ def barcode_regions(gray):
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((9, 27), np.uint8))
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     h, w = gray.shape
-    for contour in sorted(contours, key=cv2.contourArea, reverse=True)[:3]:
+    candidates = []
+    for contour in sorted(contours, key=cv2.contourArea, reverse=True)[:6]:
         x, y, cw, ch = cv2.boundingRect(contour)
         if cw * ch < .015 * h * w or min(cw, ch) < 20:
             continue
         margin = max(20, int(.15 * max(cw, ch)))
-        yield gray[max(0, y-margin):min(h, y+ch+margin), max(0, x-margin):min(w, x+cw+margin)]
+        crop = gray[max(0, y-margin):min(h, y+ch+margin), max(0, x-margin):min(w, x+cw+margin)]
+        candidates.append((barcode_score(gray[y:y+ch, x:x+cw]), crop))
+    candidates.sort(key=lambda item: item[0], reverse=True)
+    for index, (score, crop) in enumerate(candidates[:3]):
+        # Keep the single best region regardless; drop clearly text-like extras.
+        if index and score < 0.10:
+            break
+        yield crop
 
 
 def variants(image, config):
@@ -115,6 +129,14 @@ def scan(image, config, source="image", on_stage=None, cancelled=None):
     def stopped():
         return time.perf_counter() >= deadline or (cancelled and cancelled())
     def attempts():
+        # Locate the barcode before reading it: try focus-ranked detected regions
+        # first (clearest card first), then fall back to the full existing pipeline.
+        if config.get('detect', True):
+            from .detect import detect_regions
+            for stage, candidate in detect_regions(image, config):
+                if stopped():
+                    return
+                yield stage, candidate, zxingcpp.Binarizer.LocalAverage
         for stage, candidate in islice(variants(image, config), config['max_attempts']):
             if stopped():
                 return
@@ -151,7 +173,7 @@ def scan(image, config, source="image", on_stage=None, cancelled=None):
                             "source": source, "format": str(result.format), "raw_text": text,
                             "raw_bytes_base64": base64.b64encode(raw).decode("ascii"),
                             "sha256": hashlib.sha256(raw).hexdigest(),
-                            "byte_count": len(raw), "parsed": parse_payload(text),
+                            "byte_count": len(raw), "parsed": parse_payload(text, raw),
                             "stage": stage, "attempt": attempt, "orientation": result.orientation,
                             "position_in_stage": points,
                             "elapsed_ms": round((time.perf_counter()-started)*1000, 1)})
